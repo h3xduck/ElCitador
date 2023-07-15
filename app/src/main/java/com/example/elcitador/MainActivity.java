@@ -2,8 +2,12 @@ package com.example.elcitador;
 
 import static android.content.ContentValues.TAG;
 
+import static com.example.elcitador.LoggingHelper.deleteLogFile;
+import static com.example.elcitador.LoggingHelper.readLogFromFile;
+
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.app.AlertDialog;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
@@ -18,6 +22,7 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ScrollView;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -96,7 +101,6 @@ public class MainActivity extends AppCompatActivity {
                     editor.putString("nombreCentro", "");
                     editor.putString("lastQueryTime", "");
                     editor.apply();
-                    editor.apply();
                     fillCitaData();
                 }
 
@@ -108,6 +112,22 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 fillCitaData();
+            }
+        });
+
+        Button showLogButton = findViewById(R.id.logButton);
+        showLogButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showLogDialog();
+            }
+        });
+
+        Button deleteLogButton = findViewById(R.id.deleteLogButton);
+        deleteLogButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                deleteLogFile(MainActivity.this);
             }
         });
 
@@ -182,4 +202,31 @@ public class MainActivity extends AppCompatActivity {
         TextView currentCita = findViewById(R.id.currentCitaTextView);
         currentCita.setText(sharedPreferences.getString("currentEspecialidad", "") + "\nMotivo:\n"+sharedPreferences.getString("currentMotivo", ""));
     }
+
+    public void showLogDialog() {
+        // Get the logged data
+        String logData = LoggingHelper.readLogFromFile(this);
+
+        // Create a ScrollView to make the dialog content scrollable
+        ScrollView scrollView = new ScrollView(this);
+        int padding = 100;
+        scrollView.setPadding(padding, padding, padding, padding);
+
+        // Create a TextView to display the log data
+        TextView textView = new TextView(this);
+        textView.setText(logData);
+        textView.setTextAppearance(android.R.style.TextAppearance_Medium);
+
+        // Add the TextView to the ScrollView
+        scrollView.addView(textView);
+
+        // Create and show the dialog with the ScrollView as the content
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Log Data");
+        builder.setView(scrollView);
+        builder.setPositiveButton("OK", null);
+        AlertDialog dialog = builder.create();
+        dialog.show();
+    }
+
 }

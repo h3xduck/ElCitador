@@ -124,6 +124,9 @@ public class PosterBroadcastReceiver extends BroadcastReceiver {
                         String diaSemanaCita = jsonObject.getString("diaSemanaCita");
                         String nombreCentroAsociado = jsonObject.getString("nombreCentroAsociado");
 
+                        //Log the data
+                        LoggingHelper.logHttpRequest(context, "H:"+horaCitaStr+" F:"+fechaCitaStr+" N:"+nombreProfesional+" D:"+diaSemanaCita+" C:"+nombreCentroAsociado);
+
                         // Use the extracted values as needed
                         Log.d(TAG, "horaCitaStr: " + horaCitaStr);
                         Log.d(TAG, "fechaCitaStr: " + fechaCitaStr);
