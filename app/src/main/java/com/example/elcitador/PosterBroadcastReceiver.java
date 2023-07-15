@@ -8,6 +8,7 @@ import android.app.NotificationManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.util.Log;
@@ -105,6 +106,8 @@ public class PosterBroadcastReceiver extends BroadcastReceiver {
             protected void onPostExecute(String response) {
                 // Use the response as needed
                 Log.d(TAG, "Parsing HTTP POST response: " + response);
+                SharedPreferences sharedPreferences = context.getSharedPreferences("CitasPrefs", Context.MODE_PRIVATE);
+                SharedPreferences.Editor editor = sharedPreferences.edit();
 
                 try {
                     JSONArray jsonArray = new JSONArray(response);
@@ -132,34 +135,37 @@ public class PosterBroadcastReceiver extends BroadcastReceiver {
                         //then show notification
                         SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
                         try {
-                            if(DataClasser.fechaCita.isEmpty())
+                            if(sharedPreferences.getString("fechaCita", "").isEmpty())
                             {
                                 //First time we find a date
-                                DataClasser.fechaCita = fechaCitaStr;
-                                DataClasser.diaSemana = diaSemanaCita;
-                                DataClasser.horaCita = horaCitaStr;
-                                DataClasser.nombrePro = nombreProfesional;
-                                DataClasser.nombreCentro = nombreCentroAsociado;
+                                editor.putString("fechaCita", jsonObject.getString("fechaCitaStr"));
+                                editor.putString("diaSemana", jsonObject.getString("diaSemanaCita"));
+                                editor.putString("horaCita", jsonObject.getString("horaCitaStr"));
+                                editor.putString("nombrePro", jsonObject.getString("nombreProfesional"));
+                                editor.putString("nombreCentro", jsonObject.getString("nombreCentroAsociado"));
+                                editor.apply();
                                 showNotification(context);
                                 return;
                             } else {
                                 Date date1 = dateFormat.parse(fechaCitaStr);
-                                Date date2 = dateFormat.parse(DataClasser.fechaCita);
+                                Date date2 = dateFormat.parse(sharedPreferences.getString("fechaCita", ""));
 
                                 if (date1.compareTo(date2) < 0) {
                                     //Found sooner date
-                                    DataClasser.fechaCita = fechaCitaStr;
-                                    DataClasser.diaSemana = diaSemanaCita;
-                                    DataClasser.horaCita = horaCitaStr;
-                                    DataClasser.nombrePro = nombreProfesional;
-                                    DataClasser.nombreCentro = nombreCentroAsociado;
+                                    editor.putString("fechaCita", jsonObject.getString("fechaCitaStr"));
+                                    editor.putString("diaSemana", jsonObject.getString("diaSemanaCita"));
+                                    editor.putString("horaCita", jsonObject.getString("horaCitaStr"));
+                                    editor.putString("nombrePro", jsonObject.getString("nombreProfesional"));
+                                    editor.putString("nombreCentro", jsonObject.getString("nombreCentroAsociado"));
+                                    editor.apply();
                                     showNotification(context);
                                 } else if (date1.compareTo(date2) > 0) {
-                                    DataClasser.fechaCita = fechaCitaStr;
-                                    DataClasser.diaSemana = diaSemanaCita;
-                                    DataClasser.horaCita = horaCitaStr;
-                                    DataClasser.nombrePro = nombreProfesional;
-                                    DataClasser.nombreCentro = nombreCentroAsociado;
+                                    editor.putString("fechaCita", jsonObject.getString("fechaCitaStr"));
+                                    editor.putString("diaSemana", jsonObject.getString("diaSemanaCita"));
+                                    editor.putString("horaCita", jsonObject.getString("horaCitaStr"));
+                                    editor.putString("nombrePro", jsonObject.getString("nombreProfesional"));
+                                    editor.putString("nombreCentro", jsonObject.getString("nombreCentroAsociado"));
+                                    editor.apply();
                                     Log.d(TAG, "Found cita for "+fechaCitaStr+" at "+horaCitaStr+" but was later");
                                 } else {
                                     Log.d(TAG, "Found the same cita for "+fechaCitaStr+" at "+horaCitaStr);
@@ -169,7 +175,8 @@ public class PosterBroadcastReceiver extends BroadcastReceiver {
                             //Save date and time of last query
                             Date currentDate = new Date();
                             SimpleDateFormat dateTimeFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
-                            DataClasser.lastQueryDateTime = dateFormat.format(currentDate);
+                            editor.putString("lastQueryTime", dateTimeFormat.format(currentDate));
+                            editor.apply();
                         } catch (ParseException e) {
                             e.printStackTrace();
                         }
@@ -195,12 +202,14 @@ public class PosterBroadcastReceiver extends BroadcastReceiver {
         }
 
         Log.d(TAG, "Showing notification");
+        SharedPreferences sharedPreferences = context.getSharedPreferences("CitasPrefs", Context.MODE_PRIVATE);
         // Build the notification
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, "elcitador_id")
                 .setSmallIcon(R.drawable.ic_launcher_background)
                 .setContentTitle("NUEVA CITA DETECTADA")
-                .setContentText("Cita el "+DataClasser.fechaCita+" a las "+DataClasser.horaCita+ " con "+DataClasser.nombrePro+ " en "+DataClasser.nombreCentro)
-                .setPriority(NotificationCompat.PRIORITY_HIGH);
+                .setContentText("Cita el "+sharedPreferences.getString("fechaCita", "")+" a las "+sharedPreferences.getString("horaCita", "")+ " con "+sharedPreferences.getString("nombrePro", "")+ " en "+sharedPreferences.getString("nombreCentro", ""))
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setVibrate(new long[]{0, 500, 250, 500});
 
         // Show the notification
         NotificationManagerCompat notificationManager = NotificationManagerCompat.from(context);

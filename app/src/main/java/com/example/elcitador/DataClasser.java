@@ -73,10 +73,4 @@ public class DataClasser {
         }}));
     }};
 
-    public static String horaCita = "";
-    public static String fechaCita = "";
-    public static String diaSemana = "";
-    public static String nombrePro = "";
-    public static String nombreCentro = "";
-    public static String lastQueryDateTime = "";
 }

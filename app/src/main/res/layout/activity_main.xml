@@ -30,7 +30,7 @@
 
         <Space
             android:layout_width="match_parent"
-            android:layout_height="30dp" />
+            android:layout_height="10dp" />
 
         <TextView
             android:id="@+id/motivoLabel"
@@ -52,6 +52,22 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Quiero la cita" />
+
+        <Space
+            android:layout_width="match_parent"
+            android:layout_height="20dp" />
+
+        <TextView
+            android:id="@+id/currentCitaLabel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Cita siendo buscada:" />
+
+        <TextView
+            android:id="@+id/currentCitaTextView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Ninguna" />
 
         <Space
             android:layout_width="match_parent"
@@ -80,6 +96,11 @@
             android:text="Datos última consulta:" />
 
         <TextView
+            android:id="@+id/citaDataTextView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <TextView
             android:id="@+id/dateText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
@@ -98,6 +119,18 @@
             android:id="@+id/centroText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
+
+        <Button
+            android:id="@+id/updateButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Actualizar estado" />
+
+        <Button
+            android:id="@+id/manualQueryButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Buscar cita ahora" />
 
     </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

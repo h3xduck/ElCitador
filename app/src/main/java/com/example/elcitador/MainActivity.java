@@ -4,8 +4,14 @@ import static android.content.ContentValues.TAG;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.app.PendingIntent;
+import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.nfc.Tag;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.util.Pair;
 import android.view.View;
@@ -21,10 +27,16 @@ import java.util.HashMap;
 
 public class MainActivity extends AppCompatActivity {
 
+    private Handler handler;
+    private Runnable runnable;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        SharedPreferences sharedPreferences = getSharedPreferences("CitasPrefs", Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPreferences.edit();
 
         fillDropdowns();
         fillCitaData();
@@ -32,17 +44,94 @@ public class MainActivity extends AppCompatActivity {
         Spinner especialidadSpinner = findViewById(R.id.especialidadSpinner);
         Spinner motivoSpinner = findViewById(R.id.motivoSpinner);
         Button button = findViewById(R.id.scheduleButton);
+
+        //Check whether there is some cita being searched
+        if(!sharedPreferences.getString("currentEspecialidad", "").isEmpty()){
+            button.setText("Dejar de buscar la cita");
+        }
+
+        // Periodically query the time of last cita
+        handler = new Handler(Looper.getMainLooper());
+        runnable = new Runnable() {
+            @Override
+            public void run() {
+                // Call your function here
+                fillCitaData();
+
+                // Schedule the next execution after the interval
+                handler.postDelayed(this, 2000L);
+            }
+        };
+        handler.post(runnable);
+
+
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // Get the selected item text from the spinners. Then, schedule task
+                if(button.getText().equals("Quiero la cita")){
+                    // Get the selected item text from the spinners. Then, schedule task
+                    String selectedItem = especialidadSpinner.getSelectedItem().toString();
+                    editor.putString("currentEspecialidad", selectedItem);
+                    Integer selectedItemValue = DataClasser.especialidadMap.get(selectedItem).first;
+                    String selectedMotivo = motivoSpinner.getSelectedItem().toString();
+                    editor.putString("currentMotivo", selectedMotivo);
+                    editor.apply();
+                    String selectedMotivoValue = DataClasser.especialidadMap.get(selectedItem).second.get(selectedMotivo).toString();
+                    Toast.makeText(MainActivity.this, "Scheduling task--> ITEM:" + selectedItemValue + " MOTIV:" + selectedMotivoValue, Toast.LENGTH_SHORT).show();
+                    PosterScheduler.scheduleTask(MainActivity.this, selectedItemValue, selectedMotivoValue);
+                    Log.d(TAG, "Started to search for la cita");
+                    fillCitaData();
+                    button.setText("Dejar de buscar la cita");
+                }else{
+                    button.setText("Quiero la cita");
+                    PosterScheduler.deletePreviousAlarms(MainActivity.this);
+                    Log.d(TAG, "Stopped searching for la cita");
+                    TextView currentCita = findViewById(R.id.currentCitaTextView);
+                    editor.putString("currentEspecialidad", "");
+                    editor.putString("currentMotivo", "");
+                    editor.putString("fechaCita", "");
+                    editor.putString("diaSemana", "");
+                    editor.putString("horaCita", "");
+                    editor.putString("nombrePro", "");
+                    editor.putString("nombreCentro", "");
+                    editor.putString("lastQueryTime", "");
+                    editor.apply();
+                    editor.apply();
+                    fillCitaData();
+                }
+
+            }
+        });
+
+        Button updateButton = findViewById(R.id.updateButton);
+        updateButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                fillCitaData();
+            }
+        });
+
+        Button manualQueryButton = findViewById(R.id.manualQueryButton);
+        manualQueryButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                //Manually query the data now
                 String selectedItem = especialidadSpinner.getSelectedItem().toString();
                 Integer selectedItemValue = DataClasser.especialidadMap.get(selectedItem).first;
                 String selectedMotivo = motivoSpinner.getSelectedItem().toString();
                 String selectedMotivoValue = DataClasser.especialidadMap.get(selectedItem).second.get(selectedMotivo).toString();
+                Intent intent = new Intent(MainActivity.this, PosterBroadcastReceiver.class);
+                intent.putExtra("especialidad", selectedItemValue); // Pass the integer value
+                intent.putExtra("motivo", selectedMotivoValue); // Pass the string value
                 Toast.makeText(MainActivity.this, "Scheduling task--> ITEM:" + selectedItemValue + " MOTIV:" + selectedMotivoValue, Toast.LENGTH_SHORT).show();
-                PosterScheduler.scheduleTask(MainActivity.this, selectedItemValue, selectedMotivoValue);
-                Log.d(TAG, "Clicked schedule button");
+                PendingIntent pendingIntent = PendingIntent.getBroadcast(MainActivity.this, 0, intent, PendingIntent.FLAG_IMMUTABLE);
+                try {
+                    pendingIntent.send();
+                    Log.d(TAG, "Successfully sent manual pending intent");
+                } catch (PendingIntent.CanceledException e) {
+                    Log.e(TAG, "Error manually sending pending intent");
+                    e.printStackTrace();
+                }
             }
         });
 
@@ -75,16 +164,22 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void fillCitaData(){
+        SharedPreferences sharedPreferences = this.getSharedPreferences("CitasPrefs", Context.MODE_PRIVATE);
         Log.d(TAG, "filled cita data");
         TextView date = findViewById(R.id.dateText);
         TextView hour = findViewById(R.id.hourText);
         TextView pro = findViewById(R.id.proText);
         TextView centro = findViewById(R.id.centroText);
         TextView lastQuery = findViewById(R.id.lastQueryTextView);
-        lastQuery.setText(DataClasser.lastQueryDateTime);
-        date.setText(DataClasser.fechaCita);
-        hour.setText(DataClasser.horaCita);
-        pro.setText(DataClasser.nombrePro);
-        centro.setText(DataClasser.nombreCentro);
+        TextView cita = findViewById(R.id.citaDataTextView);
+        lastQuery.setText(sharedPreferences.getString("lastQueryTime", ""));
+        date.setText(sharedPreferences.getString("fechaCita", ""));
+        hour.setText(sharedPreferences.getString("horaCita", ""));
+        pro.setText(sharedPreferences.getString("nombrePro", ""));
+        centro.setText(sharedPreferences.getString("nombreCentro", ""));
+        cita.setText(sharedPreferences.getString("currentEspecialidad", "")+" "+sharedPreferences.getString("currentMotivo", ""));
+
+        TextView currentCita = findViewById(R.id.currentCitaTextView);
+        currentCita.setText(sharedPreferences.getString("currentEspecialidad", "") + "\nMotivo:\n"+sharedPreferences.getString("currentMotivo", ""));
     }
 }

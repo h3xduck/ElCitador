@@ -28,7 +28,7 @@ public class PosterScheduler {
         alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + intervalMillis, intervalMillis, pendingIntent);
     }
 
-    private static void deletePreviousAlarms(Context context) {
+    public static void deletePreviousAlarms(Context context) {
         AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
         Intent intent = new Intent(context, PosterBroadcastReceiver.class);
         PendingIntent pendingIntent = PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_IMMUTABLE);
